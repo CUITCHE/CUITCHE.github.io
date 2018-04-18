@@ -6,11 +6,11 @@ comments: true
 ---
 
 我们知道`NSSecureCoding`协议可以完成一个Objective-C类的加密工作。我们只需要在一个类中实现`NSSecureCoding`协议的方法，通过调用`NSKeyedArchiver`类`+ (NSData *)archivedDataWithRootObject:;`就可以生成加密后的数据。然后通过`NSKeyedUnarchiver`的`+ (nullable id)unarchiveObjectWithData:;`方法来反解数据。例如这样：
-```objectivec
+{% highlight objectivec %}
 NSDictionary *security = @{/*some data*/}; // NSDictionary已经实现了NSSecureCoding协议。
 NSData *d = [NSKeyedArchiver archivedDataWithRootObject:security]; // 加密数据
 id rt = [NSKeyedUnarchiver unarchiveObjectWithData:d]; // 解密数据，并还原到类实例。
-```
+{% endhighlight objectivec %}
 <!--more-->
 
 可是你可知道这种方式并不安全。笔者今天就通过反解天猫商城的地址数据`addressManager.data`来探讨`NSSecureCoding`协议的安全性。
@@ -43,7 +43,7 @@ id rt = [NSKeyedUnarchiver unarchiveObjectWithData:d]; // 解密数据，并还�
 
 ## 反解类名
 我们直接写一个`莫名其妙的`类。
-```objectivec
+{% highlight objectivec %}
 @interface Unknown : NSObject
 
 @end
@@ -51,16 +51,16 @@ id rt = [NSKeyedUnarchiver unarchiveObjectWithData:d]; // 解密数据，并还�
 @implementation Unknown
 
 @end
-```
+{% endhighlight objectivec %}
 
 是的，就这么简洁。不需要任何成员变量，连类名都可以简单取。然后读取数据，用`NSKeyedUnarchiver`来反解试试！
 
-```objectivec
+{% highlight objectivec %}
 NSString *path = [CHSystemUtil privateDocumentsPath];
 NSString *filePath = [path stringByAppendingPathComponent:@"addressManager.data"];
 NSArray<Unknown *> *data = [NSKeyedUnarchiver unarchiveObjectWithFile:filePath];
 NSLog(@"%@", data);
-```
+{% endhighlight objectivec %}
 运行一下。
 ![](/assets/2016-05-08-论iOS协议NSSecureCoding的安全性//try0.png)
 
@@ -68,7 +68,7 @@ NSLog(@"%@", data);
 
 `cannot decode object of class (TBAreaEX) for key (NS.objects); the class may be defined in source code or a library that is not linked`，这份异常信息已经告诉我们原始的Objective-C类的类名是`TBAreaEX`。好的，我们就把这个名字替换我们之前的类名`Unknown`，并且实现`NSSecureCoding`协议。
 
-```objectivec
+{% highlight objectivec %}
 @interface TBAreaEX : NSObject <NSSecureCoding>
 
 @end
@@ -90,7 +90,7 @@ NSLog(@"%@", data);
 - (void)encodeWithCoder:(NSCoder *)aCoder
 {
 }
-```
+{% endhighlight objectivec %}
 因为，我们还不知道TBAreaEX中有哪些成员变量，所以暂时这么写。然后我们运行一下，这下就没有报错了。
 
 ## 反解成员变量
@@ -111,7 +111,7 @@ NSLog(@"%@", data);
  > 也可以指定类型。如果类型错了，系统会抛出异常，异常里面会带有正确类型的信息。
 
 于是，我们就可以把这些数据补充到我们写的`TBAreaEX`中。
-```objectivec
+{% highlight objectivec %}
 @interface TBAreaEX : NSObject <NSSecureCoding>
 
 @property (nonatomic, strong) id post;
@@ -148,13 +148,13 @@ NSLog(@"%@", data);
 }
 
 @end
-```
+{% endhighlight objectivec %}
 然后运行我们的程序。结果如下图所示
 
 ![](/assets/2016-05-08-论iOS协议NSSecureCoding的安全性//try3.png)
 
 这些数据说明了，`post和code`是`NSString`类型，而children是一个数组（其实从数据结构上来说，它应该就是一个数组了，而且我们还可以肯定它存的就是`TBAreaEX`类）从图中数据，也证实了我们的想法。我们还是按照这个类型去改造我们的`TBAreaEX`类信息。
-```objectivec
+{% highlight objectivec %}
 @interface TBAreaEX : NSObject <NSSecureCoding>
 
 @property (nonatomic, strong) NSString *post;
@@ -191,7 +191,7 @@ NSLog(@"%@", data);
 }
 
 @end
-```
+{% endhighlight objectivec %}
 
 运行之后，我们就可以得到天猫加密后的地址数据了。
 
@@ -209,7 +209,7 @@ NSLog(@"%@", data);
 * 我们可以把`[aCoder encodeObject:_post forKey:@"post"];`的`post`字符串改成其它无人类语言化的字符组合。
 * 上面的方面治标不治本。因为我们可以根据`NSSecureCoding`中的`T`分隔符找到关键key。所以，我们从`addressManager.data`中可以看到，`post`和`code`即成员变量的间隔是用字符`T`来分割，那么我们就可以利用这个用`TTTTTTT`N个'T'来作为NSCoder的key，让破解查找关键字变得费力！例如：
 
-```objectivec
+{% highlight objectivec %}
 - (void)encodeWithCoder:(NSCoder *)aCoder
 {
     [aCoder encodeObject:_post forKey:@"TTTTTTTTTTTTTT"];
@@ -217,7 +217,7 @@ NSLog(@"%@", data);
     [aCoder encodeObject:_name forKey:@"TTTTTTT"];
     [aCoder encodeObject:_children forKey:@"TTTTTTTTTTT"];
 }
-```
+{% endhighlight objectivec %}
     
 * 我们可以根据类名的偏移量找到关键字，而且用N个`T`的key，可以在O(N * k)（k是key的个数，N是key的最长长度）的时间复杂度中找出。鉴于此，我们可以把这份文件我们再加密一次。这样做的话，又增加了加密函数编写的难度。所以我推荐第二种方式足矣。
 

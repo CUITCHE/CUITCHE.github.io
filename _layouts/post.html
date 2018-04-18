@@ -2,10 +2,6 @@
 layout: default
 ---
 
-<head>
-  <link media="all", rel="stylesheet" type="text/css" href={{ "/assets/prism.css" | relative_url }} />
-</head>
-
 <a class="btn" href= "{{ site.url }}/" >
   Home
 </a>
@@ -70,7 +66,3 @@ layout: default
 <div id="disqus_thread"></div>
 {% include disqus.html %}
 {% endif %}
-
-<body>
-  <script src={{ "/assets/prism.js" | relative_url }}></script>
-</body>

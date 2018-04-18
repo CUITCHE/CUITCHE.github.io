@@ -13,18 +13,18 @@ image:
 最近在写JSPatch，想做一个简单的Demo，利用JSPatch动态修改方法的能力，写了一个简单的Demo。
 代码如下：
 
-```Objective-C
+{% highlight objectivec %}
 // ViewController.h
 #import <UIKit/UIKit.h>
 
 @interface ViewController : UIViewController
 
 @end
-```
+{% endhighlight objectivec %}
 
 头文件很简单。我们还是看.m文件吧
 
-```Objective-C
+{% highlight objectivec %}
 // ViewController.m
 @interface ViewController ()<UITableViewDataSource, UITableViewDelegate>
 
@@ -135,7 +135,7 @@ image:
     return [super respondsToSelector:aSelector];
 }
 @end
-```
+{% endhighlight objectivec %}
 
 我的想法是在运行的时候，通过JSPatch生成`- (void)tableView: didSelectRowAtIndexPath:`方法，在点击UITableViewCell的时候，能响应，弹出对话框。然而在生成了tableview后，再执行JSPatch把`- (void)tableView: didSelectRowAtIndexPath:`添加进去，点击cell的时候居然不响应。
 为此，我写了一个button来测试。从上面的代码可以看出，我用button关联一个不存在的方法selector(onButtonClicked:)——这个方法我在JSPatch里实现，在运行的时候动态加载。最后，我点击button后成功响应了。我就在想是不是UITableView本身的问题。
@@ -146,13 +146,13 @@ image:
 一般地，我们在使用delegate调用方法的时候，为了不引起程序crash，都会小心的加上一句：`[obj respondsToSelector:aSelector]`，去询问『我可以调这个方法』，如果不行就不调用了，免得crash。
 当然，UITableView肯定也会调用`[obj respondsToSelector:aSelector]`的，所以我重写ViewController的`respondsToSelector:`方法。
 
-```Objective-C
+{% highlight objectivec %}
 - (BOOL)respondsToSelector:(SEL)aSelector
 {
     NSLog(@"%@", NSStringFromSelector(aSelector));
     return [super respondsToSelector:aSelector];
 }
-```
+{% endhighlight objectivec %}
 
 为了不产生副作用，我直接在重写的方法中调用了父类的方法，并打印selecotr字符串。运行程序，程序输出了：
 
@@ -262,10 +262,10 @@ image:
 ```
 
 看到输出结果，此时我的内心是激动的。输出了所有`UITableViewDataSource, UITableViewDelegate`协议的方法名字，这就意味着，程序在某个地方对这两个协议的方法都询问了一遍。然后我又猜测，唯一的合理的地方应该是我们在设置UITableView的delegate和dataSource的时候执行询问操作的。因为只有设置了delegate了，对这些方法的询问才有意义。于是我在代码中注释了这两句
-```Objective-C
+{% highlight objectivec %}
 //    _tableView.delegate = self;
 //    _tableView.dataSource = self;
-```
+{% endhighlight objectivec %}
 
 再执行程序，输出：
 ```
@@ -288,7 +288,7 @@ Apple在设计UITableView的时候，肯定也想到了。所以，我们就大�
 
 Objective-C作为一门动态语言，获取一个变量（私有）还是很容易的。随便到网上搜一篇就有详细的讲解，我这里直接贴代码了：
 
-```Objective-C
+{% highlight objectivec %}
 - (void)onButtonClicked:(id)sender
 {
     Class curClass = NSClassFromString(@"UITableView");
@@ -313,7 +313,7 @@ Objective-C作为一门动态语言，获取一个变量（私有）还是很容
     }
     free(vars);
 }
-```
+{% endhighlight objectivec %}
 
 由于输出太多了，我就只截取重要部分：
 ```
@@ -343,7 +343,7 @@ Objective-C作为一门动态语言，获取一个变量（私有）还是很容
 
 我就分割了一下这个类型描述串，最后得到这个结构体
 
-```Objective-C
+{% highlight objectivec %}
 typedef unsigned int _Type;
 typedef struct _TableViewFlags
 {
@@ -525,11 +525,11 @@ typedef struct _TableViewFlags
     _Type sectionContentInsetFollowsLayoutMargins : 1;
 } _TableViewFlags;
 这里在定义_Type类型的时候不建议用int，1个bit的int，在输出表示的时候，会被输出成『-1』或者『0』，1个bit的int这唯一的空间被拿去表示正负数了- =。
-```
+{% endhighlight objectivec %}
 
 Objective-C的成员变量，我们可以通过`实例对象地址`+`成员变量地址偏移`获得。利用这个，我们就可以获取到`_tableFlags`的值了。我们改造一下刚刚的函数吧：
 
-```Objective-C
+{% highlight objectivec %}
 - (void)onButtonClicked:(id)sender
 {
     Class curClass = NSClassFromString(@"UITableView");
@@ -737,7 +737,7 @@ Objective-C的成员变量，我们可以通过`实例对象地址`+`成员变�
     }
     free(vars);
 }
-```
+{% endhighlight objectivec %}
 
 为了验证我的想法，进行了两次程序调用：
 * 加载我的JSPatch文件，看`delegateDidSelectRow`的值。
@@ -758,12 +758,12 @@ Objective-C的成员变量，我们可以通过`实例对象地址`+`成员变�
 ## 适时更新TableFlag缓存
 得到这些信息后，我们在加载完JSPatch后更改一下对应缓存的值就行了。或许，你会觉得直接重新对delegate进行一次赋值不就好了吗。就像这样
 
-```Objective-C
+{% highlight objectivec %}
 _tableView.delegate = nil;
 _tableView.dataSource = nil;
 _tableView.delegate = self;
 _tableView.dataSource = self;
-```
+{% endhighlight objectivec %}
 好吧，我承认这样一样有效，但是我不能保证这样没有副作用。建议还是直接更新缓存吧！直接更新缓存肯定比重新赋值要快很多！
 
 ## 修订记录
