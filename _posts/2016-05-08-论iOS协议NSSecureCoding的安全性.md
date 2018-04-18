@@ -3,6 +3,7 @@ layout: post
 title: 论iOS协议NSSecureCoding的安全性
 categories: [iOS]
 comments: true
+tags: [iOS]
 ---
 
 我们知道`NSSecureCoding`协议可以完成一个Objective-C类的加密工作。我们只需要在一个类中实现`NSSecureCoding`协议的方法，通过调用`NSKeyedArchiver`类`+ (NSData *)archivedDataWithRootObject:;`就可以生成加密后的数据。然后通过`NSKeyedUnarchiver`的`+ (nullable id)unarchiveObjectWithData:;`方法来反解数据。例如这样：

@@ -8,6 +8,7 @@ image:
   feature: iOS-UITableView之delegate方法的缓存.feature.jpeg
   credit: ppppic.com
   creditlink: http://ppppic.com/image?src=10/7/27303_303306.jpg
+tags: [iOS]
 ---
 
 最近在写JSPatch，想做一个简单的Demo，利用JSPatch动态修改方法的能力，写了一个简单的Demo。

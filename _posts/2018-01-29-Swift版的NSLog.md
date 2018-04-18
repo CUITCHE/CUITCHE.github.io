@@ -3,18 +3,19 @@ layout: post
 title: Swift版的NSLog
 categories: [Swift]
 comments: true
+tags: [Swift]
 ---
 
 在[C]中，我们可以用宏定义来配置NSLog函数以控制它在发版（release）的时候失去作用，即不往stdout里写数据；更重要的是对NSLog传入的参数也不会写到APP里，这项很重要，我们都不想把调试的信息也打包进APP二进制里。
 <!--more-->
 
-{% highlight c %}
+~~~ c
 #ifdef DEBUG
 #define NSLog(...) NSLog(__VA_ARGS__)
 #else
 #define NSLog(...)
 #endif
-{% endhighlight c %}
+~~~
 这是一个运用很广的宏技巧，它可以保证debug的时候NSLog正常运作，而在其它时候NSLog就什么都不做。
 
 但是，Swift对宏的支持不是很友善，只能通过-D flag配置简单的宏。那么如何写出Swift里的NSLog呢？我有以下思路。
